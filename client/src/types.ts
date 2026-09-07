@@ -149,8 +149,46 @@ export function defaultParams(): SimulationParams {
     roundTripEfficiencyPct: 90,
     maxPowerCRate: 1,
     minSocReservePct: 0,
-    sweepMinKWh: 0,
-    sweepMaxKWh: 20,
-    sweepStepKWh: 0.5,
+    sweepMinKWh: 5,
+    sweepMaxKWh: 40,
+    sweepStepKWh: 1,
   };
+}
+
+const PARAMS_STORAGE_KEY = 'pvstoragesizer-params';
+
+function isValidParams(v: unknown): v is SimulationParams {
+  if (!v || typeof v !== 'object') return false;
+  const obj = v as Record<string, unknown>;
+  const keys: (keyof SimulationParams)[] = [
+    'roundTripEfficiencyPct',
+    'maxPowerCRate',
+    'minSocReservePct',
+    'sweepMinKWh',
+    'sweepMaxKWh',
+    'sweepStepKWh',
+  ];
+  return keys.every((k) => typeof obj[k] === 'number' && Number.isFinite(obj[k] as number));
+}
+
+/** Restores simulation parameters saved by a previous visit, so a page reload doesn't
+ *  reset them back to the defaults. Falls back to defaults if nothing is stored, or if
+ *  what's stored doesn't match the current shape (e.g. from an older app version). */
+export function loadStoredParams(): SimulationParams {
+  try {
+    const raw = localStorage.getItem(PARAMS_STORAGE_KEY);
+    if (!raw) return defaultParams();
+    const parsed: unknown = JSON.parse(raw);
+    return isValidParams(parsed) ? parsed : defaultParams();
+  } catch {
+    return defaultParams();
+  }
+}
+
+export function saveParams(params: SimulationParams): void {
+  try {
+    localStorage.setItem(PARAMS_STORAGE_KEY, JSON.stringify(params));
+  } catch {
+    // localStorage may be unavailable (private browsing, quota) - persistence is a nice-to-have.
+  }
 }

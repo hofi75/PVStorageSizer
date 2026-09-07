@@ -61,42 +61,39 @@ function toSweepPoint(
   };
 }
 
-/** Finds the "knee" of the (capacity, export-reduction) curve: the point of maximum curvature. */
+/** Below this rate (percentage points of export reduction gained per additional kWh of
+ *  capacity), an extra kWh of battery is considered not worth it. */
+const MARGINAL_RETURN_THRESHOLD_PCT_PER_KWH = 1;
+
+/**
+ * Finds the "knee" of the (capacity, export-reduction) curve: the smallest capacity
+ * beyond which each additional kWh stops buying a meaningful amount of extra export
+ * reduction. Walks the curve from its smallest tested capacity upward, purely by local
+ * marginal return between adjacent tested points - deliberately NOT relative to the
+ * curve's overall endpoints, so the result reflects the underlying data rather than
+ * wherever the user happened to set the sweep's min/max (that previously made the
+ * recommendation shift when only the tested range changed, even though the physical
+ * consumption/production data - and so the true optimum - hadn't).
+ */
 function findKneePoint(points: SweepPoint[]): SweepPoint {
-  if (points.length <= 2) return points[points.length - 1];
-
-  const xs = points.map((p) => p.capacityKWh);
-  const ys = points.map((p) => p.exportReductionPct);
-  const xMin = Math.min(...xs);
-  const xMax = Math.max(...xs);
-  const yMin = Math.min(...ys);
-  const yMax = Math.max(...ys);
-  const nx = (x: number) => (xMax > xMin ? (x - xMin) / (xMax - xMin) : 0);
-  const ny = (y: number) => (yMax > yMin ? (y - yMin) / (yMax - yMin) : 0);
-
-  const x1 = nx(xs[0]);
-  const y1 = ny(ys[0]);
-  const x2 = nx(xs[xs.length - 1]);
-  const y2 = ny(ys[ys.length - 1]);
-  const lineLen = Math.hypot(x2 - x1, y2 - y1) || 1e-9;
-
-  let bestIdx = 0;
-  let bestDist = -Infinity;
-  for (let i = 0; i < points.length; i++) {
-    const x0 = nx(xs[i]);
-    const y0 = ny(ys[i]);
-    const dist = Math.abs((x2 - x1) * (y0 - y1) - (y2 - y1) * (x0 - x1)) / lineLen;
-    if (dist > bestDist) {
-      bestDist = dist;
-      bestIdx = i;
-    }
+  const sorted = [...points].sort((a, b) => a.capacityKWh - b.capacityKWh);
+  let chosen = sorted[0];
+  for (let i = 1; i < sorted.length; i++) {
+    const deltaCapacity = sorted[i].capacityKWh - sorted[i - 1].capacityKWh;
+    if (deltaCapacity <= 0) continue;
+    const deltaReduction = sorted[i].exportReductionPct - sorted[i - 1].exportReductionPct;
+    const marginalRate = deltaReduction / deltaCapacity;
+    if (marginalRate < MARGINAL_RETURN_THRESHOLD_PCT_PER_KWH) break;
+    chosen = sorted[i];
   }
-  return points[bestIdx];
+  return chosen;
 }
 
-function buildReason(lang: Lang, recommended: SweepPoint, points: SweepPoint[]): string {
+function buildReason(lang: Lang, recommended: SweepPoint, points: SweepPoint[], baselineImportKWh: number): string {
   const idx = points.findIndex((p) => p.capacityKWh === recommended.capacityKWh);
   const next = idx >= 0 ? points[idx + 1] : undefined;
+  const importSavingKWh = Math.max(0, baselineImportKWh - recommended.gridImportKWh);
+  const importSavingPct = baselineImportKWh > 0 ? (importSavingKWh / baselineImportKWh) * 100 : 0;
 
   if (lang === 'hu') {
     let marginalNote = '';
@@ -113,7 +110,9 @@ function buildReason(lang: Lang, recommended: SweepPoint, points: SweepPoint[]):
       `A ${recommended.capacityKWh.toFixed(1)} kWh kapacitás a hálózatba visszatöltött energiát ` +
       `${recommended.exportReductionPct.toFixed(0)}%-kal csökkenti a tárolás nélküli esethez képest, ` +
       `napi átlagban kb. ${recommended.dailyCycles.toFixed(2)} teljes ciklust futva, és az éjszakai ` +
-      `fogyasztás ${recommended.nightCoveragePct.toFixed(0)}%-át fedezi a napközbeni termelésből.` +
+      `fogyasztás ${recommended.nightCoveragePct.toFixed(0)}%-át fedezi a napközbeni termelésből. ` +
+      `A hálózatból vételezett energiát is kb. ${importSavingKWh.toFixed(0)} kWh-val (${importSavingPct.toFixed(0)}%) ` +
+      `csökkenti a tárolás nélküli esethez képest.` +
       `${marginalNote}${cycleNote}`
     );
   }
@@ -133,7 +132,9 @@ function buildReason(lang: Lang, recommended: SweepPoint, points: SweepPoint[]):
       `Die Kapazität von ${recommended.capacityKWh.toFixed(1)} kWh reduziert die ins Netz eingespeiste Energie ` +
       `um ${recommended.exportReductionPct.toFixed(0)}% gegenüber dem Fall ohne Speicher, bei durchschnittlich ` +
       `ca. ${recommended.dailyCycles.toFixed(2)} vollen Zyklen pro Tag, und deckt ${recommended.nightCoveragePct.toFixed(0)}% ` +
-      `des nächtlichen Verbrauchs aus der Tageserzeugung.${marginalNote}${cycleNote}`
+      `des nächtlichen Verbrauchs aus der Tageserzeugung. Außerdem reduziert sie die aus dem Netz bezogene Energie ` +
+      `gegenüber dem Fall ohne Speicher um etwa ${importSavingKWh.toFixed(0)} kWh (${importSavingPct.toFixed(0)}%).` +
+      `${marginalNote}${cycleNote}`
     );
   }
 
@@ -151,7 +152,9 @@ function buildReason(lang: Lang, recommended: SweepPoint, points: SweepPoint[]):
     `A capacity of ${recommended.capacityKWh.toFixed(1)} kWh reduces energy exported to the grid by ` +
     `${recommended.exportReductionPct.toFixed(0)}% compared to no storage, running about ` +
     `${recommended.dailyCycles.toFixed(2)} full cycles per day on average, and covers ` +
-    `${recommended.nightCoveragePct.toFixed(0)}% of night consumption from daytime production.` +
+    `${recommended.nightCoveragePct.toFixed(0)}% of night consumption from daytime production. It also cuts ` +
+    `the energy drawn from the grid by about ${importSavingKWh.toFixed(0)} kWh (${importSavingPct.toFixed(0)}%) ` +
+    `compared to no storage.` +
     `${marginalNote}${cycleNote}`
   );
 }
@@ -354,8 +357,12 @@ export function runSimulation(
     return toSweepPoint(capacityKWh, sim, baselineExportKWh, totalProductionKWh, days);
   });
 
-  const nonZeroSweep = sweep.filter((p) => p.capacityKWh > 0);
-  const knee = findKneePoint(nonZeroSweep.length > 0 ? nonZeroSweep : sweep);
+  // buildSweepCapacities always includes a capacity=0 baseline point regardless of
+  // sweepMinKWh, purely so the sweep chart/export-reduction-% baseline is available -
+  // it's not actually part of the user's requested search range unless they set the
+  // minimum to 0 themselves, so exclude it from the recommendation search accordingly.
+  const searchRangeSweep = sweep.filter((p) => p.capacityKWh >= params.sweepMinKWh - 1e-9);
+  const knee = findKneePoint(searchRangeSweep.length > 0 ? searchRangeSweep : sweep);
 
   // The detailed trace/charts/reason are for whichever capacity is currently selected -
   // the server's own recommendation by default, or a capacity the user picked instead.
@@ -375,7 +382,7 @@ export function runSimulation(
           totalProductionKWh,
           days,
         );
-  const reason = buildReason(lang, selectedPoint, pointsWithSelection(sweep, selectedPoint));
+  const reason = buildReason(lang, selectedPoint, pointsWithSelection(sweep, selectedPoint), baselineSim.gridImportKWh);
 
   const selectedSim = simulateBattery(consumptionKWh, productionKWh, {
     capacityKWh: selectedPoint.capacityKWh,

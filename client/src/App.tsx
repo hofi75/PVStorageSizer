@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import './App.css';
 import { parseCsvFile, simulate } from './api';
 import { FileUploadCard } from './components/FileUploadCard';
@@ -11,7 +11,7 @@ import { MonthlyConsumptionChart } from './components/MonthlyConsumptionChart';
 import { DaySelectorChart } from './components/DaySelectorChart';
 import { LanguageSwitcher } from './components/LanguageSwitcher';
 import { useTranslation } from './i18n/context';
-import { defaultParams } from './types';
+import { loadStoredParams, saveParams } from './types';
 import type { ColumnMapping, ParsedCsv, SimulationParams, SimulationResponse } from './types';
 
 interface FileSlotState {
@@ -42,11 +42,15 @@ function App() {
   const { lang, t } = useTranslation();
   const [consumption, setConsumption] = useState<FileSlotState>(emptySlot);
   const [production, setProduction] = useState<FileSlotState>(emptySlot);
-  const [params, setParams] = useState<SimulationParams>(defaultParams());
+  const [params, setParams] = useState<SimulationParams>(loadStoredParams);
   const [result, setResult] = useState<SimulationResponse | null>(null);
   const [simLoading, setSimLoading] = useState(false);
   const [capacityChanging, setCapacityChanging] = useState(false);
   const [simError, setSimError] = useState<string | null>(null);
+
+  useEffect(() => {
+    saveParams(params);
+  }, [params]);
 
   const handleFileSelected = async (setSlot: (s: FileSlotState) => void, file: File) => {
     setSlot({ fileName: file.name, parsed: null, mapping: null, loading: true, error: null });
