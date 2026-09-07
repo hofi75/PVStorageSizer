@@ -1,5 +1,7 @@
 import { combineDateAndTime, parseTimestamp } from '../csv/dateFormats.js';
 import { parseLocaleNumber } from '../csv/numberParse.js';
+import { noOverlapError, noValidIntervalsError } from '../i18n.js';
+import type { Lang } from '../i18n.js';
 import type { FileMappingInput } from './types.js';
 
 export interface EnergyInterval {
@@ -204,10 +206,11 @@ function redistributeToGrid(intervals: EnergyInterval[], rangeStart: number, ran
 export function alignSeries(
   consumption: EnergyInterval[],
   production: EnergyInterval[],
-  gridExport?: EnergyInterval[] | null,
+  gridExport: EnergyInterval[] | null | undefined,
+  lang: Lang,
 ): AlignedSeries {
   if (consumption.length === 0 || production.length === 0) {
-    throw new Error('A fogyasztási vagy a termelési fájlból nem sikerült érvényes adatot kinyerni.');
+    throw new Error(noValidIntervalsError(lang));
   }
 
   const consumptionRange = {
@@ -223,9 +226,7 @@ export function alignSeries(
   const rawEnd = Math.min(consumptionRange.end, productionRange.end);
 
   if (rawEnd <= rawStart) {
-    throw new Error(
-      'A két fájl időtartománya nem fedi egymást – nincs közös időszak, amire a szimulációt el lehetne végezni.',
-    );
+    throw new Error(noOverlapError(lang));
   }
 
   const rangeStart = Math.floor(rawStart / GRID_MS) * GRID_MS;

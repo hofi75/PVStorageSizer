@@ -7,8 +7,8 @@
 # the final "runtime" stage, so its auth token never ends up in the shipped image
 # (multi-stage builds only export the final stage's layers).
 #
-# Build:  docker build -t battery-calculator .
-# Run:    docker run --rm -p 3001:3001 battery-calculator
+# Build:  docker build -t pvstoragesizer .
+# Run:    docker run --rm -p 3001:3001 pvstoragesizer
 
 FROM node:22-alpine AS deps
 WORKDIR /app

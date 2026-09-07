@@ -11,22 +11,24 @@ import {
   YAxis,
 } from 'recharts';
 import { useColorScheme, TOKENS } from '../palette';
+import { useTranslation } from '../i18n/context';
 import type { DailyProfilePoint } from '../types';
 
 interface Props {
   dailyProfile: DailyProfilePoint[];
 }
 
-const HU_LABELS: Record<string, string> = {
-  avgProductionKWh: 'Termelés',
-  avgConsumptionKWh: 'Fogyasztás',
-  avgSoCKWh: 'Akku töltöttség',
-  netGrid: 'Hálózati csere',
-};
-
 export function DailyProfileChart({ dailyProfile }: Props) {
   const scheme = useColorScheme();
   const t = TOKENS[scheme];
+  const { t: tr } = useTranslation();
+
+  const LABELS: Record<string, string> = {
+    avgProductionKWh: tr('charts.dailyProfile.seriesProduction'),
+    avgConsumptionKWh: tr('charts.dailyProfile.seriesConsumption'),
+    avgSoCKWh: tr('charts.dailyProfile.seriesSoc'),
+    netGrid: tr('charts.dailyProfile.seriesNetGrid'),
+  };
 
   const gridData = dailyProfile.map((p) => ({
     label: p.label,
@@ -47,7 +49,7 @@ export function DailyProfileChart({ dailyProfile }: Props) {
   return (
     <div className="chart-grid">
       <div className="chart-card">
-        <h3>Átlagos nap: fogyasztás, termelés és töltöttségi szint</h3>
+        <h3>{tr('charts.dailyProfile.title1')}</h3>
         <ResponsiveContainer width="100%" height={260}>
           <ComposedChart data={dailyProfile} margin={{ top: 10, right: 24, bottom: 4, left: 4 }}>
             <CartesianGrid stroke={t.gridline} vertical={false} />
@@ -65,10 +67,10 @@ export function DailyProfileChart({ dailyProfile }: Props) {
             />
             <Tooltip
               contentStyle={tooltipStyle}
-              formatter={(value: number, key: string) => [`${value.toFixed(2)} kWh`, HU_LABELS[key] ?? key]}
+              formatter={(value: number, key: string) => [`${value.toFixed(2)} kWh`, LABELS[key] ?? key]}
             />
             <Legend
-              formatter={(value: string) => HU_LABELS[value] ?? value}
+              formatter={(value: string) => LABELS[value] ?? value}
               wrapperStyle={{ color: t.textSecondary, fontSize: 12 }}
             />
             <Line
@@ -103,7 +105,7 @@ export function DailyProfileChart({ dailyProfile }: Props) {
       </div>
 
       <div className="chart-card">
-        <h3>Átlagos nap: hálózati csere (behozás felül / visszatöltés alul)</h3>
+        <h3>{tr('charts.dailyProfile.title2')}</h3>
         <ResponsiveContainer width="100%" height={220}>
           <ComposedChart data={gridData} margin={{ top: 10, right: 24, bottom: 4, left: 4 }}>
             <defs>
@@ -137,8 +139,8 @@ export function DailyProfileChart({ dailyProfile }: Props) {
             <Tooltip
               contentStyle={tooltipStyle}
               formatter={(value: number) => {
-                const dir = value >= 0 ? 'vételezés' : 'visszatöltés';
-                return [`${Math.abs(value).toFixed(2)} kWh (${dir})`, 'Hálózati csere'];
+                const dir = value >= 0 ? tr('charts.dailyProfile.import') : tr('charts.dailyProfile.export');
+                return [`${Math.abs(value).toFixed(2)} kWh (${dir})`, tr('charts.dailyProfile.seriesNetGrid')];
               }}
             />
             <Area

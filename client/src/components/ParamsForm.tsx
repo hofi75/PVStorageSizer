@@ -1,4 +1,5 @@
 import type { SimulationParams } from '../types';
+import { useTranslation } from '../i18n/context';
 
 interface Props {
   params: SimulationParams;
@@ -6,13 +7,14 @@ interface Props {
 }
 
 export function ParamsForm({ params, onChange }: Props) {
+  const { t } = useTranslation();
   const set = <K extends keyof SimulationParams>(key: K, value: number) =>
     onChange({ ...params, [key]: value });
 
   return (
     <div className="params-form">
       <div className="param-field">
-        <label htmlFor="eff">Kör-hatásfok (%)</label>
+        <label htmlFor="eff">{t('params.efficiency')}</label>
         <input
           id="eff"
           type="number"
@@ -24,7 +26,7 @@ export function ParamsForm({ params, onChange }: Props) {
         />
       </div>
       <div className="param-field">
-        <label htmlFor="crate">Max töltő/kisütő teljesítmény (C-rate)</label>
+        <label htmlFor="crate">{t('params.crate')}</label>
         <input
           id="crate"
           type="number"
@@ -36,7 +38,7 @@ export function ParamsForm({ params, onChange }: Props) {
         />
       </div>
       <div className="param-field">
-        <label htmlFor="reserve">Minimális töltöttségi szint (%)</label>
+        <label htmlFor="reserve">{t('params.reserve')}</label>
         <input
           id="reserve"
           type="number"
@@ -48,7 +50,7 @@ export function ParamsForm({ params, onChange }: Props) {
         />
       </div>
       <div className="param-field">
-        <label htmlFor="sweepMin">Vizsgált kapacitás tartomány (kWh)</label>
+        <label htmlFor="sweepMin">{t('params.sweepRange')}</label>
         <div className="range-inputs">
           <input
             id="sweepMin"
@@ -71,7 +73,7 @@ export function ParamsForm({ params, onChange }: Props) {
         </div>
       </div>
       <div className="param-field">
-        <label htmlFor="sweepStep">Lépésköz (kWh)</label>
+        <label htmlFor="sweepStep">{t('params.sweepStep')}</label>
         <input
           id="sweepStep"
           type="number"

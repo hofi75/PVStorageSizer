@@ -1,5 +1,6 @@
 import type { ColumnMapping, ParsedCsv } from '../types';
 import { DATE_ONLY_FORMATS, DATETIME_FORMATS } from '../types';
+import { useTranslation, type TranslationKey } from '../i18n/context';
 
 interface Props {
   idPrefix: string;
@@ -8,9 +9,14 @@ interface Props {
   onChange: (mapping: ColumnMapping) => void;
 }
 
-function columnLabel(parsed: ParsedCsv, mapping: ColumnMapping, index: number): string {
+function columnLabel(
+  parsed: ParsedCsv,
+  mapping: ColumnMapping,
+  index: number,
+  t: (key: TranslationKey, params?: Record<string, string | number>) => string,
+): string {
   const header = mapping.hasHeader ? parsed.rows[0]?.[index] : undefined;
-  return header ? `${index + 1}. ${header}` : `${index + 1}. oszlop`;
+  return header ? `${index + 1}. ${header}` : t('columnMapper.columnFallback', { index: index + 1 });
 }
 
 export function distinctValues(parsed: ParsedCsv, mapping: ColumnMapping, col: number): string[] {
@@ -24,10 +30,12 @@ export function distinctValues(parsed: ParsedCsv, mapping: ColumnMapping, col: n
 }
 
 export function ColumnMapper({ idPrefix, parsed, mapping, onChange }: Props) {
+  const { t } = useTranslation();
   const columnCount = parsed.columnCount;
   const previewRows = (mapping.hasHeader ? parsed.rows.slice(1) : parsed.rows).slice(0, 6);
   const columns = Array.from({ length: columnCount }, (_, i) => i);
   const id = (name: string) => `${idPrefix}-${name}`;
+  const label = (i: number) => columnLabel(parsed, mapping, i, t);
 
   const set = <K extends keyof ColumnMapping>(key: K, value: ColumnMapping[K]) =>
     onChange({ ...mapping, [key]: value });
@@ -39,7 +47,7 @@ export function ColumnMapper({ idPrefix, parsed, mapping, onChange }: Props) {
           <thead>
             <tr>
               {columns.map((i) => (
-                <th key={i}>{columnLabel(parsed, mapping, i)}</th>
+                <th key={i}>{label(i)}</th>
               ))}
             </tr>
           </thead>
@@ -61,11 +69,11 @@ export function ColumnMapper({ idPrefix, parsed, mapping, onChange }: Props) {
           checked={mapping.hasHeader}
           onChange={(e) => set('hasHeader', e.target.checked)}
         />
-        Az első sor fejléc (nem adat)
+        {t('columnMapper.hasHeader')}
       </label>
 
       <div className="field-row">
-        <span className="field-label">Időbélyeg formátuma a fájlban</span>
+        <span className="field-label">{t('columnMapper.timestampFormatLabel')}</span>
         <div className="radio-group">
           <label>
             <input
@@ -73,7 +81,7 @@ export function ColumnMapper({ idPrefix, parsed, mapping, onChange }: Props) {
               checked={mapping.timestampMode === 'single'}
               onChange={() => set('timestampMode', 'single')}
             />
-            Egy oszlopban (dátum + idő együtt)
+            {t('columnMapper.timestampSingle')}
           </label>
           <label>
             <input
@@ -81,7 +89,7 @@ export function ColumnMapper({ idPrefix, parsed, mapping, onChange }: Props) {
               checked={mapping.timestampMode === 'split'}
               onChange={() => set('timestampMode', 'split')}
             />
-            Külön dátum és idő oszlopban
+            {t('columnMapper.timestampSplit')}
           </label>
         </div>
       </div>
@@ -89,7 +97,7 @@ export function ColumnMapper({ idPrefix, parsed, mapping, onChange }: Props) {
       {mapping.timestampMode === 'single' ? (
         <div className="field-row">
           <label className="field-label" htmlFor={id('timestampCol')}>
-            Időbélyeg oszlop
+            {t('columnMapper.timestampCol')}
           </label>
           <select
             id={id('timestampCol')}
@@ -98,7 +106,7 @@ export function ColumnMapper({ idPrefix, parsed, mapping, onChange }: Props) {
           >
             {columns.map((i) => (
               <option key={i} value={i}>
-                {columnLabel(parsed, mapping, i)}
+                {label(i)}
               </option>
             ))}
           </select>
@@ -113,12 +121,12 @@ export function ColumnMapper({ idPrefix, parsed, mapping, onChange }: Props) {
       ) : (
         <div className="field-row">
           <label className="field-label" htmlFor={id('dateCol')}>
-            Dátum oszlop
+            {t('columnMapper.dateCol')}
           </label>
           <select id={id('dateCol')} value={mapping.dateCol} onChange={(e) => set('dateCol', Number(e.target.value))}>
             {columns.map((i) => (
               <option key={i} value={i}>
-                {columnLabel(parsed, mapping, i)}
+                {label(i)}
               </option>
             ))}
           </select>
@@ -134,21 +142,21 @@ export function ColumnMapper({ idPrefix, parsed, mapping, onChange }: Props) {
             ))}
           </select>
           <label className="field-label" htmlFor={id('timeCol')}>
-            Idő oszlop
+            {t('columnMapper.timeCol')}
           </label>
           <select id={id('timeCol')} value={mapping.timeCol} onChange={(e) => set('timeCol', Number(e.target.value))}>
             {columns.map((i) => (
               <option key={i} value={i}>
-                {columnLabel(parsed, mapping, i)}
+                {label(i)}
               </option>
             ))}
           </select>
-          <span className="hint">formátum: ÓÓ:PP vagy ÓÓ:PP:MM</span>
+          <span className="hint">{t('columnMapper.timeHint')}</span>
         </div>
       )}
 
       <div className="field-row">
-        <span className="field-label">Az időbélyeg az intervallum...</span>
+        <span className="field-label">{t('columnMapper.alignmentLabel')}</span>
         <div className="radio-group">
           <label>
             <input
@@ -156,7 +164,7 @@ export function ColumnMapper({ idPrefix, parsed, mapping, onChange }: Props) {
               checked={mapping.timestampAlignment === 'end'}
               onChange={() => set('timestampAlignment', 'end')}
             />
-            végét jelöli (pl. "00:15" = 00:00–00:15 közötti adat)
+            {t('columnMapper.alignmentEnd')}
           </label>
           <label>
             <input
@@ -164,19 +172,19 @@ export function ColumnMapper({ idPrefix, parsed, mapping, onChange }: Props) {
               checked={mapping.timestampAlignment === 'start'}
               onChange={() => set('timestampAlignment', 'start')}
             />
-            kezdetét jelöli
+            {t('columnMapper.alignmentStart')}
           </label>
         </div>
       </div>
 
       <div className="field-row">
         <label className="field-label" htmlFor={id('valueCol')}>
-          Érték oszlop
+          {t('columnMapper.valueCol')}
         </label>
         <select id={id('valueCol')} value={mapping.valueCol} onChange={(e) => set('valueCol', Number(e.target.value))}>
           {columns.map((i) => (
             <option key={i} value={i}>
-              {columnLabel(parsed, mapping, i)}
+              {label(i)}
             </option>
           ))}
         </select>
@@ -185,9 +193,9 @@ export function ColumnMapper({ idPrefix, parsed, mapping, onChange }: Props) {
           value={mapping.valueUnit}
           onChange={(e) => set('valueUnit', e.target.value as ColumnMapping['valueUnit'])}
         >
-          <option value="kWh">kWh (energia / intervallum)</option>
-          <option value="kW">kW (átlagteljesítmény)</option>
-          <option value="W">W (átlagteljesítmény)</option>
+          <option value="kWh">{t('columnMapper.unitKWh')}</option>
+          <option value="kW">{t('columnMapper.unitKW')}</option>
+          <option value="W">{t('columnMapper.unitW')}</option>
         </select>
       </div>
 
@@ -205,14 +213,13 @@ export function ColumnMapper({ idPrefix, parsed, mapping, onChange }: Props) {
             }
           }}
         />
-        Csak bizonyos sorok felhasználása (pl. ha a fájl fogyasztási és termelési
-        adatokat is tartalmaz egy "típus" oszloppal)
+        {t('columnMapper.filterToggle')}
       </label>
 
       {mapping.filterCol !== null && (
         <div className="field-row">
           <label className="field-label" htmlFor={id('filterCol')}>
-            Szűrés oszlopa
+            {t('columnMapper.filterColLabel')}
           </label>
           <select
             id={id('filterCol')}
@@ -226,12 +233,12 @@ export function ColumnMapper({ idPrefix, parsed, mapping, onChange }: Props) {
           >
             {columns.map((i) => (
               <option key={i} value={i}>
-                {columnLabel(parsed, mapping, i)}
+                {label(i)}
               </option>
             ))}
           </select>
           <label className="field-label" htmlFor={id('filterValue')}>
-            Elvárt érték
+            {t('columnMapper.filterValueLabel')}
           </label>
           <select
             id={id('filterValue')}
@@ -261,14 +268,13 @@ export function ColumnMapper({ idPrefix, parsed, mapping, onChange }: Props) {
             }
           }}
         />
-        Van egy "státusz" oszlop, ami jelzi a hiányzó/érvénytelen adatot (pl. "Nincs") - ezeknél egy korábbi
-        nap azonos időpontbeli értékét használjuk
+        {t('columnMapper.missingToggle')}
       </label>
 
       {mapping.missingStatusCol !== null && (
         <div className="field-row">
           <label className="field-label" htmlFor={id('missingStatusCol')}>
-            Státusz oszlopa
+            {t('columnMapper.missingColLabel')}
           </label>
           <select
             id={id('missingStatusCol')}
@@ -281,12 +287,12 @@ export function ColumnMapper({ idPrefix, parsed, mapping, onChange }: Props) {
           >
             {columns.map((i) => (
               <option key={i} value={i}>
-                {columnLabel(parsed, mapping, i)}
+                {label(i)}
               </option>
             ))}
           </select>
           <label className="field-label" htmlFor={id('missingStatusValue')}>
-            Hiányzó adatot jelző érték
+            {t('columnMapper.missingValueLabel')}
           </label>
           <select
             id={id('missingStatusValue')}

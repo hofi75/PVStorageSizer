@@ -1,19 +1,21 @@
 import { Bar, BarChart, CartesianGrid, Legend, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import { useColorScheme, TOKENS } from '../palette';
+import { useTranslation } from '../i18n/context';
 import type { MonthlyNightPoint } from '../types';
 
 interface Props {
   monthlyNightProfile: MonthlyNightPoint[];
 }
 
-const HU_LABELS: Record<string, string> = {
-  avgNightConsumptionKWh: 'Átlagos éjszakai fogyasztás',
-  avgNightStartSoCKWh: 'Átlagos töltöttség éjszaka elején',
-};
-
 export function MonthlyNightChart({ monthlyNightProfile }: Props) {
   const scheme = useColorScheme();
   const t = TOKENS[scheme];
+  const { t: tr } = useTranslation();
+
+  const LABELS: Record<string, string> = {
+    avgNightConsumptionKWh: tr('charts.monthlyNight.seriesConsumption'),
+    avgNightStartSoCKWh: tr('charts.monthlyNight.seriesStartSoc'),
+  };
 
   if (monthlyNightProfile.length === 0) return null;
 
@@ -29,9 +31,9 @@ export function MonthlyNightChart({ monthlyNightProfile }: Props) {
   return (
     <div className="chart-grid">
       <div className="chart-card">
-        <h3>Havi átlagos éjszakai fogyasztás és kezdő akku-töltöttség</h3>
+        <h3>{tr('charts.monthlyNight.title')}</h3>
         <p className="muted" style={{ marginTop: -4, marginBottom: 8, fontSize: 13 }}>
-          Az éjszaka a nap utolsó termelt intervallumától a következő nap első termelt intervallumáig tart.
+          {tr('charts.monthlyNight.description')}
         </p>
         <ResponsiveContainer width="100%" height={260}>
           <BarChart data={monthlyNightProfile} margin={{ top: 10, right: 24, bottom: 4, left: 4 }}>
@@ -45,14 +47,14 @@ export function MonthlyNightChart({ monthlyNightProfile }: Props) {
             />
             <Tooltip
               contentStyle={tooltipStyle}
-              formatter={(value: number, key: string) => [`${value.toFixed(2)} kWh`, HU_LABELS[key] ?? key]}
+              formatter={(value: number, key: string) => [`${value.toFixed(2)} kWh`, LABELS[key] ?? key]}
               labelFormatter={(label: string) => {
                 const p = byMonth.get(label);
-                return p ? `${label} (${p.nightsCount} éjszaka)` : label;
+                return p ? tr('charts.monthlyNight.tooltipLabel', { label, count: p.nightsCount }) : label;
               }}
             />
             <Legend
-              formatter={(value: string) => HU_LABELS[value] ?? value}
+              formatter={(value: string) => LABELS[value] ?? value}
               wrapperStyle={{ color: t.textSecondary, fontSize: 12 }}
             />
             <Bar

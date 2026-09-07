@@ -11,34 +11,36 @@ import {
   YAxis,
 } from 'recharts';
 import { useColorScheme, TOKENS } from '../palette';
+import { useTranslation } from '../i18n/context';
 import type { IntervalSeriesData } from '../types';
 
 interface Props {
   intervalSeries: IntervalSeriesData;
 }
 
-const HU_LABELS: Record<string, string> = {
-  socKWh: 'Akkumulátor töltöttség',
-  totalProductionKWh: 'Aktuális termelés',
-  gridExportKWh: 'Aktuális visszatáplálás',
-  gridImportKWh: 'Aktuális fogyasztás hálózatról',
-  batteryDischargeKWh: 'Aktuális fogyasztás akkumulátorról',
-  totalConsumptionKWh: 'Összes fogyasztás',
-};
-
 function dayKeyOf(ms: number): string {
   const d = new Date(ms);
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 }
 
+/** dayKeyOf already produces YYYY-MM-DD; just swap the separator for the fixed YYYY.MM.DD display format. */
 function dayLabelOf(key: string): string {
-  const [y, m, d] = key.split('-');
-  return `${y}. ${m}. ${d}.`;
+  return key.replace(/-/g, '.');
 }
 
 export function DaySelectorChart({ intervalSeries }: Props) {
   const scheme = useColorScheme();
   const t = TOKENS[scheme];
+  const { t: tr } = useTranslation();
+
+  const LABELS: Record<string, string> = {
+    socKWh: tr('charts.daySelector.seriesSoc'),
+    totalProductionKWh: tr('charts.daySelector.seriesProduction'),
+    gridExportKWh: tr('charts.daySelector.seriesGridExport'),
+    gridImportKWh: tr('charts.daySelector.seriesGridImport'),
+    batteryDischargeKWh: tr('charts.daySelector.seriesBatteryDischarge'),
+    totalConsumptionKWh: tr('charts.daySelector.seriesTotalConsumption'),
+  };
 
   const dayKeys = useMemo(() => {
     const seen = new Set<string>();
@@ -107,10 +109,10 @@ export function DaySelectorChart({ intervalSeries }: Props) {
 
   return (
     <div className="chart-card">
-      <h3>Napi menetrend (kiválasztható nap, órás bontásban)</h3>
+      <h3>{tr('charts.daySelector.title')}</h3>
       <div className="field-row">
         <label className="field-label" htmlFor="day-selector">
-          Nap
+          {tr('charts.daySelector.dayLabel')}
         </label>
         <select id="day-selector" value={selectedDay} onChange={(e) => setSelectedDay(e.target.value)}>
           {dayKeys.map((key) => (
@@ -121,8 +123,7 @@ export function DaySelectorChart({ intervalSeries }: Props) {
         </select>
       </div>
       <p className="muted" style={{ marginTop: 8, marginBottom: 8, fontSize: 13 }}>
-        A fogyasztás mindig lent (negatív), a visszatáplálás és a töltöttség fent (pozitív) látható. Az órán belüli
-        adatok összegezve (töltöttségnél átlagolva) jelennek meg.
+        {tr('charts.daySelector.description')}
       </p>
       <ResponsiveContainer width="100%" height={380}>
         <ComposedChart data={chartData} margin={{ top: 10, right: 24, bottom: 4, left: 4 }}>
@@ -137,10 +138,10 @@ export function DaySelectorChart({ intervalSeries }: Props) {
           <ReferenceLine y={0} stroke={t.baseline} strokeWidth={1} />
           <Tooltip
             contentStyle={tooltipStyle}
-            formatter={(value: number, key: string) => [`${Math.abs(value).toFixed(3)} kWh`, HU_LABELS[key] ?? key]}
+            formatter={(value: number, key: string) => [`${Math.abs(value).toFixed(3)} kWh`, LABELS[key] ?? key]}
           />
           <Legend
-            formatter={(value: string) => HU_LABELS[value] ?? value}
+            formatter={(value: string) => LABELS[value] ?? value}
             wrapperStyle={{ color: t.textSecondary, fontSize: 12 }}
           />
           <Line

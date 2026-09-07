@@ -95,7 +95,7 @@ export interface SimulationMeta {
 
 export interface SimulationResponse {
   sweep: SweepPoint[];
-  recommended: SweepPoint & { reasonHu: string };
+  recommended: SweepPoint & { reason: string };
   dailyProfile: DailyProfilePoint[];
   monthlyNightProfile: MonthlyNightPoint[];
   monthlyConsumptionProfile: MonthlyConsumptionPoint[] | null;

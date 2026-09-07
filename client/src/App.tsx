@@ -9,7 +9,9 @@ import { DailyProfileChart } from './components/DailyProfileChart';
 import { MonthlyNightChart } from './components/MonthlyNightChart';
 import { MonthlyConsumptionChart } from './components/MonthlyConsumptionChart';
 import { DaySelectorChart } from './components/DaySelectorChart';
+import { LanguageSwitcher } from './components/LanguageSwitcher';
 import { distinctValues } from './components/ColumnMapper';
+import { useTranslation } from './i18n/context';
 import { defaultParams } from './types';
 import type { ColumnMapping, ParsedCsv, SimulationParams, SimulationResponse } from './types';
 
@@ -41,6 +43,7 @@ function deriveGridExportMapping(consumption: FileSlotState): { rows: string[][]
 }
 
 function App() {
+  const { lang, t } = useTranslation();
   const [consumption, setConsumption] = useState<FileSlotState>(emptySlot);
   const [production, setProduction] = useState<FileSlotState>(emptySlot);
   const [params, setParams] = useState<SimulationParams>(defaultParams());
@@ -51,7 +54,7 @@ function App() {
   const handleFileSelected = async (setSlot: (s: FileSlotState) => void, file: File) => {
     setSlot({ fileName: file.name, parsed: null, mapping: null, loading: true, error: null });
     try {
-      const parsed = await parseCsvFile(file);
+      const parsed = await parseCsvFile(file, lang);
       setSlot({
         fileName: file.name,
         parsed,
@@ -76,6 +79,7 @@ function App() {
         { rows: production.parsed.rows, mapping: production.mapping },
         params,
         deriveGridExportMapping(consumption),
+        lang,
       );
       setResult(res);
     } catch (err) {
@@ -89,24 +93,18 @@ function App() {
   return (
     <div className="app-root">
       <header className="app-header">
-        <h1>Akkumulátor méretező</h1>
-        <p className="muted">
-          Töltsd fel a negyedórás fogyasztási és napelemes termelési adataidat CSV-ben, és a rendszer megkeresi azt
-          az akkumulátor kapacitást, amelynél a hálózatba visszatöltött energia a legkisebb, az akkumulátor
-          kihasználtsága pedig még jó.
-        </p>
+        <div className="app-header-row">
+          <h1>{t('app.title')}</h1>
+          <LanguageSwitcher />
+        </div>
+        <p className="muted">{t('app.subtitle')}</p>
       </header>
 
       <div className="upload-grid">
         <FileUploadCard
           idPrefix="consumption"
-          title="1. Fogyasztási adatok"
-          description={
-            'Elektromos mérőóra negyedórás bontású CSV exportja. Ha a fájl a vételezett és a hálózatba ' +
-            'visszatáplált energiát is tartalmazza (egy "típus" oszloppal megkülönböztetve), a rendszer a ' +
-            'szűrőben nem választott másik értékből automatikusan levezeti a visszatáplálást is - külön ' +
-            'fájlt nem kell feltölteni hozzá.'
-          }
+          title={t('upload.consumption.title')}
+          description={t('upload.consumption.description')}
           fileName={consumption.fileName}
           parsed={consumption.parsed}
           mapping={consumption.mapping}
@@ -117,8 +115,8 @@ function App() {
         />
         <FileUploadCard
           idPrefix="production"
-          title="2. Napelemes termelési adatok"
-          description="Az inverter/monitoring rendszer termelési CSV exportja, ugyanarra a fogyasztási helyre."
+          title={t('upload.production.title')}
+          description={t('upload.production.description')}
           fileName={production.fileName}
           parsed={production.parsed}
           mapping={production.mapping}
@@ -130,13 +128,13 @@ function App() {
       </div>
 
       <div className="card">
-        <h2>3. Szimulációs paraméterek</h2>
+        <h2>{t('params.sectionTitle')}</h2>
         <ParamsForm params={params} onChange={setParams} />
       </div>
 
       <div className="action-row">
         <button className="primary-button" disabled={!canSimulate || simLoading} onClick={handleSimulate}>
-          {simLoading ? 'Számítás…' : 'Számítás indítása'}
+          {simLoading ? t('action.simulating') : t('action.simulate')}
         </button>
         {simError && <p className="status error">{simError}</p>}
       </div>

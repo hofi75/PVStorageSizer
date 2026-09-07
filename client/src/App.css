@@ -15,6 +15,17 @@
   max-width: 720px;
 }
 
+.app-header-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.language-switcher {
+  flex: none;
+}
+
 .card,
 .upload-card {
   background: var(--surface);

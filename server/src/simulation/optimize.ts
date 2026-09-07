@@ -1,4 +1,6 @@
 import { NIGHT_EPSILON_KWH, simulateBattery } from './simulate.js';
+import { monthLabel } from '../i18n.js';
+import type { Lang } from '../i18n.js';
 import type {
   DailyProfilePoint,
   IntervalSeriesData,
@@ -10,16 +12,12 @@ import type {
   SweepPoint,
 } from './types.js';
 
-const HU_MONTH_ABBR = [
-  'jan.', 'febr.', 'márc.', 'ápr.', 'máj.', 'jún.', 'júl.', 'aug.', 'szept.', 'okt.', 'nov.', 'dec.',
-];
-
-function monthKeyAndLabel(timestampMs: number): { key: string; label: string } {
+function monthKeyAndLabel(lang: Lang, timestampMs: number): { key: string; label: string } {
   const d = new Date(timestampMs);
   const year = d.getFullYear();
   const month = d.getMonth();
   const key = `${year}-${String(month + 1).padStart(2, '0')}`;
-  return { key, label: `${year}. ${HU_MONTH_ABBR[month]}` };
+  return { key, label: monthLabel(lang, timestampMs) };
 }
 
 function dayKey(timestampMs: number): string {
@@ -96,27 +94,64 @@ function findKneePoint(points: SweepPoint[]): SweepPoint {
   return points[bestIdx];
 }
 
-function buildReasonHu(recommended: SweepPoint, points: SweepPoint[]): string {
+function buildReason(lang: Lang, recommended: SweepPoint, points: SweepPoint[]): string {
   const idx = points.findIndex((p) => p.capacityKWh === recommended.capacityKWh);
   const next = idx >= 0 ? points[idx + 1] : undefined;
+
+  if (lang === 'hu') {
+    let marginalNote = '';
+    if (next) {
+      const extraCapacity = next.capacityKWh - recommended.capacityKWh;
+      const extraReduction = next.exportReductionPct - recommended.exportReductionPct;
+      marginalNote = ` Egy ${extraCapacity.toFixed(1)} kWh-val nagyobb tároló a visszatöltést már csak további kb. ${extraReduction.toFixed(1)} százalékponttal csökkentené, egyre rosszabb kihasználtság mellett.`;
+    }
+    const cycleNote =
+      recommended.dailyCycles < 0.3
+        ? ' Ez a méret is viszonylag alacsony kihasználtságú (napi 0,3 ciklusnál kevesebb) – ha a beruházási költség fontos szempont, érdemes lehet kisebb kapacitást választani.'
+        : '';
+    return (
+      `A ${recommended.capacityKWh.toFixed(1)} kWh kapacitás a hálózatba visszatöltött energiát ` +
+      `${recommended.exportReductionPct.toFixed(0)}%-kal csökkenti a tárolás nélküli esethez képest, ` +
+      `napi átlagban kb. ${recommended.dailyCycles.toFixed(2)} teljes ciklust futva, és az éjszakai ` +
+      `fogyasztás ${recommended.nightCoveragePct.toFixed(0)}%-át fedezi a napközbeni termelésből.` +
+      `${marginalNote}${cycleNote}`
+    );
+  }
+
+  if (lang === 'de') {
+    let marginalNote = '';
+    if (next) {
+      const extraCapacity = next.capacityKWh - recommended.capacityKWh;
+      const extraReduction = next.exportReductionPct - recommended.exportReductionPct;
+      marginalNote = ` Ein um ${extraCapacity.toFixed(1)} kWh größerer Speicher würde die Einspeisung nur noch um weitere ca. ${extraReduction.toFixed(1)} Prozentpunkte senken, bei zunehmend schlechterer Auslastung.`;
+    }
+    const cycleNote =
+      recommended.dailyCycles < 0.3
+        ? ' Auch diese Größe hat eine relativ geringe Auslastung (weniger als 0.3 Zyklen pro Tag) - falls die Investitionskosten wichtig sind, könnte eine kleinere Kapazität sinnvoll sein.'
+        : '';
+    return (
+      `Die Kapazität von ${recommended.capacityKWh.toFixed(1)} kWh reduziert die ins Netz eingespeiste Energie ` +
+      `um ${recommended.exportReductionPct.toFixed(0)}% gegenüber dem Fall ohne Speicher, bei durchschnittlich ` +
+      `ca. ${recommended.dailyCycles.toFixed(2)} vollen Zyklen pro Tag, und deckt ${recommended.nightCoveragePct.toFixed(0)}% ` +
+      `des nächtlichen Verbrauchs aus der Tageserzeugung.${marginalNote}${cycleNote}`
+    );
+  }
 
   let marginalNote = '';
   if (next) {
     const extraCapacity = next.capacityKWh - recommended.capacityKWh;
     const extraReduction = next.exportReductionPct - recommended.exportReductionPct;
-    marginalNote = ` Egy ${extraCapacity.toFixed(1)} kWh-val nagyobb tároló a visszatöltést már csak további kb. ${extraReduction.toFixed(1)} százalékponttal csökkentené, egyre rosszabb kihasználtság mellett.`;
+    marginalNote = ` A storage ${extraCapacity.toFixed(1)} kWh larger would only reduce grid export by a further ~${extraReduction.toFixed(1)} percentage points, with progressively worse utilization.`;
   }
-
   const cycleNote =
     recommended.dailyCycles < 0.3
-      ? ' Ez a méret is viszonylag alacsony kihasználtságú (napi 0,3 ciklusnál kevesebb) – ha a beruházási költség fontos szempont, érdemes lehet kisebb kapacitást választani.'
+      ? ' This size also has relatively low utilization (fewer than 0.3 cycles per day) - if upfront cost matters, a smaller capacity may be worth considering.'
       : '';
-
   return (
-    `A ${recommended.capacityKWh.toFixed(1)} kWh kapacitás a hálózatba visszatöltött energiát ` +
-    `${recommended.exportReductionPct.toFixed(0)}%-kal csökkenti a tárolás nélküli esethez képest, ` +
-    `napi átlagban kb. ${recommended.dailyCycles.toFixed(2)} teljes ciklust futva, és az éjszakai ` +
-    `fogyasztás ${recommended.nightCoveragePct.toFixed(0)}%-át fedezi a napközbeni termelésből.` +
+    `A capacity of ${recommended.capacityKWh.toFixed(1)} kWh reduces energy exported to the grid by ` +
+    `${recommended.exportReductionPct.toFixed(0)}% compared to no storage, running about ` +
+    `${recommended.dailyCycles.toFixed(2)} full cycles per day on average, and covers ` +
+    `${recommended.nightCoveragePct.toFixed(0)}% of night consumption from daytime production.` +
     `${marginalNote}${cycleNote}`
   );
 }
@@ -168,6 +203,7 @@ function buildDailyProfile(
  * then averages those per calendar month.
  */
 function buildMonthlyNightProfile(
+  lang: Lang,
   timestamps: number[],
   consumptionKWh: number[],
   productionKWh: number[],
@@ -188,7 +224,7 @@ function buildMonthlyNightProfile(
     let nightConsumption = 0;
     for (let i = nightStart + 1; i < nightEnd; i++) nightConsumption += consumptionKWh[i];
 
-    const { key, label } = monthKeyAndLabel(timestamps[nightStart]);
+    const { key, label } = monthKeyAndLabel(lang, timestamps[nightStart]);
     const entry = byMonth.get(key) ?? { label, count: 0, consumptionSum: 0, socSum: 0 };
     entry.count += 1;
     entry.consumptionSum += nightConsumption;
@@ -215,6 +251,7 @@ function buildMonthlyNightProfile(
  * months fully covered by the grid-export input.
  */
 function buildMonthlyConsumptionProfile(
+  lang: Lang,
   timestamps: number[],
   consumptionKWh: number[],
   productionKWh: number[],
@@ -229,7 +266,7 @@ function buildMonthlyConsumptionProfile(
     const selfConsumedSolar = Math.max(0, productionKWh[i] - gridExportKWh[i]);
     const trueConsumption = consumptionKWh[i] + productionKWh[i] - gridExportKWh[i];
 
-    const { key, label } = monthKeyAndLabel(timestamps[i]);
+    const { key, label } = monthKeyAndLabel(lang, timestamps[i]);
     const entry = byMonth.get(key) ?? { label, consumption: 0, gridImport: 0, selfConsumed: 0 };
     entry.consumption += trueConsumption;
     entry.gridImport += consumptionKWh[i];
@@ -267,6 +304,7 @@ function buildIntervalSeries(
 }
 
 export function runSimulation(
+  lang: Lang,
   timestamps: number[],
   consumptionKWh: number[],
   productionKWh: number[],
@@ -308,7 +346,7 @@ export function runSimulation(
 
   const nonZeroSweep = sweep.filter((p) => p.capacityKWh > 0);
   const knee = findKneePoint(nonZeroSweep.length > 0 ? nonZeroSweep : sweep);
-  const reasonHu = buildReasonHu(knee, sweep);
+  const reason = buildReason(lang, knee, sweep);
 
   const recommendedSim = simulateBattery(consumptionKWh, productionKWh, {
     capacityKWh: knee.capacityKWh,
@@ -327,6 +365,7 @@ export function runSimulation(
   );
 
   const monthlyNightProfile = buildMonthlyNightProfile(
+    lang,
     timestamps,
     consumptionKWh,
     productionKWh,
@@ -335,7 +374,14 @@ export function runSimulation(
 
   const monthlyConsumptionProfile =
     gridExportKWh && gridExportCoverage
-      ? buildMonthlyConsumptionProfile(timestamps, consumptionKWh, productionKWh, gridExportKWh, gridExportCoverage)
+      ? buildMonthlyConsumptionProfile(
+          lang,
+          timestamps,
+          consumptionKWh,
+          productionKWh,
+          gridExportKWh,
+          gridExportCoverage,
+        )
       : null;
 
   const intervalSeries = buildIntervalSeries(timestamps, consumptionKWh, productionKWh, recommendedSim.trace!);
@@ -352,7 +398,7 @@ export function runSimulation(
 
   return {
     sweep,
-    recommended: { ...knee, reasonHu },
+    recommended: { ...knee, reason },
     dailyProfile,
     monthlyNightProfile,
     monthlyConsumptionProfile,

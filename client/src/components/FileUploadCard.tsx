@@ -1,5 +1,6 @@
 import { useRef } from 'react';
 import type { ColumnMapping, ParsedCsv } from '../types';
+import { useTranslation } from '../i18n/context';
 import { ColumnMapper } from './ColumnMapper';
 
 interface Props {
@@ -27,6 +28,7 @@ export function FileUploadCard({
   onFileSelected,
   onMappingChange,
 }: Props) {
+  const { t } = useTranslation();
   const inputRef = useRef<HTMLInputElement>(null);
 
   const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
@@ -60,14 +62,14 @@ export function FileUploadCard({
         {fileName ? (
           <span>
             📄 {fileName}
-            {parsed && ` — ${parsed.rows.length} sor`}
+            {parsed && ` — ${t('upload.rowCount', { count: parsed.rows.length })}`}
           </span>
         ) : (
-          <span>Húzd ide a CSV fájlt, vagy kattints a tallózáshoz</span>
+          <span>{t('upload.dropzoneHint')}</span>
         )}
       </div>
 
-      {loading && <p className="status">Feldolgozás…</p>}
+      {loading && <p className="status">{t('upload.processing')}</p>}
       {error && <p className="status error">{error}</p>}
 
       {parsed && mapping && (

@@ -9,6 +9,7 @@ import {
   YAxis,
 } from 'recharts';
 import { useColorScheme, TOKENS } from '../palette';
+import { useTranslation } from '../i18n/context';
 import type { SweepPoint } from '../types';
 
 interface Props {
@@ -34,6 +35,7 @@ function ChartCard({
 export function CapacityChart({ sweep, recommendedCapacityKWh }: Props) {
   const scheme = useColorScheme();
   const t = TOKENS[scheme];
+  const { t: tr } = useTranslation();
   const recommended = sweep.find((p) => p.capacityKWh === recommendedCapacityKWh);
 
   const tooltipStyle = {
@@ -45,7 +47,7 @@ export function CapacityChart({ sweep, recommendedCapacityKWh }: Props) {
 
   return (
     <div className="chart-grid">
-      <ChartCard title="Hálózatba visszatöltött energia csökkenése a tárolás nélküli esethez képest">
+      <ChartCard title={tr('charts.capacity.title1')}>
         <ResponsiveContainer width="100%" height={220}>
           <LineChart data={sweep} margin={{ top: 10, right: 24, bottom: 4, left: 4 }}>
             <CartesianGrid stroke={t.gridline} vertical={false} />
@@ -65,7 +67,7 @@ export function CapacityChart({ sweep, recommendedCapacityKWh }: Props) {
             />
             <Tooltip
               contentStyle={tooltipStyle}
-              formatter={(value: number) => [`${value.toFixed(1)}%`, 'Export csökkenés']}
+              formatter={(value: number) => [`${value.toFixed(1)}%`, tr('results.exportReduction')]}
               labelFormatter={(v) => `${v} kWh`}
             />
             <Line
@@ -85,14 +87,14 @@ export function CapacityChart({ sweep, recommendedCapacityKWh }: Props) {
                 fill={t.good}
                 stroke={t.surface}
                 strokeWidth={2}
-                label={{ value: 'Javasolt', position: 'top', fill: t.textSecondary, fontSize: 12 }}
+                label={{ value: tr('charts.capacity.recommended'), position: 'top', fill: t.textSecondary, fontSize: 12 }}
               />
             )}
           </LineChart>
         </ResponsiveContainer>
       </ChartCard>
 
-      <ChartCard title="Akkumulátor kihasználtság (átlagos napi ciklusszám)">
+      <ChartCard title={tr('charts.capacity.title2')}>
         <ResponsiveContainer width="100%" height={220}>
           <LineChart data={sweep} margin={{ top: 10, right: 24, bottom: 4, left: 4 }}>
             <CartesianGrid stroke={t.gridline} vertical={false} />
@@ -107,7 +109,7 @@ export function CapacityChart({ sweep, recommendedCapacityKWh }: Props) {
             <YAxis stroke={t.baseline} tick={{ fill: t.muted, fontSize: 12 }} width={44} />
             <Tooltip
               contentStyle={tooltipStyle}
-              formatter={(value: number) => [`${value.toFixed(2)}`, 'Napi ciklus']}
+              formatter={(value: number) => [`${value.toFixed(2)}`, tr('charts.capacity.dailyCycleTooltip')]}
               labelFormatter={(v) => `${v} kWh`}
             />
             <Line
@@ -127,7 +129,7 @@ export function CapacityChart({ sweep, recommendedCapacityKWh }: Props) {
                 fill={t.good}
                 stroke={t.surface}
                 strokeWidth={2}
-                label={{ value: 'Javasolt', position: 'top', fill: t.textSecondary, fontSize: 12 }}
+                label={{ value: tr('charts.capacity.recommended'), position: 'top', fill: t.textSecondary, fontSize: 12 }}
               />
             )}
           </LineChart>

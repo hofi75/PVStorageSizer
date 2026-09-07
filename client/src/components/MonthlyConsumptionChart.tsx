@@ -1,19 +1,21 @@
 import { Bar, BarChart, CartesianGrid, Legend, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import { useColorScheme, TOKENS } from '../palette';
+import { useTranslation } from '../i18n/context';
 import type { MonthlyConsumptionPoint } from '../types';
 
 interface Props {
   monthlyConsumptionProfile: MonthlyConsumptionPoint[];
 }
 
-const HU_LABELS: Record<string, string> = {
-  totalSelfConsumedSolarKWh: 'Közvetlenül elfogyasztott napelemes energia',
-  totalGridImportKWh: 'Hálózatból vételezett energia',
-};
-
 export function MonthlyConsumptionChart({ monthlyConsumptionProfile }: Props) {
   const scheme = useColorScheme();
   const t = TOKENS[scheme];
+  const { t: tr } = useTranslation();
+
+  const LABELS: Record<string, string> = {
+    totalSelfConsumedSolarKWh: tr('charts.monthlyConsumption.seriesSelfConsumed'),
+    totalGridImportKWh: tr('charts.monthlyConsumption.seriesGridImport'),
+  };
 
   if (monthlyConsumptionProfile.length === 0) return null;
 
@@ -29,10 +31,9 @@ export function MonthlyConsumptionChart({ monthlyConsumptionProfile }: Props) {
   return (
     <div className="chart-grid">
       <div className="chart-card">
-        <h3>Havi valós háztartási fogyasztás (vételezés + termelés − visszatáplálás)</h3>
+        <h3>{tr('charts.monthlyConsumption.title')}</h3>
         <p className="muted" style={{ marginTop: -4, marginBottom: 8, fontSize: 13 }}>
-          A hálózatból vételezett energia önmagában alábecsüli a tényleges fogyasztást, mert nem tartalmazza a
-          napelemből közvetlenül (hálózat nélkül) elfogyasztott részt.
+          {tr('charts.monthlyConsumption.description')}
         </p>
         <ResponsiveContainer width="100%" height={260}>
           <BarChart data={monthlyConsumptionProfile} margin={{ top: 10, right: 24, bottom: 4, left: 4 }}>
@@ -46,14 +47,16 @@ export function MonthlyConsumptionChart({ monthlyConsumptionProfile }: Props) {
             />
             <Tooltip
               contentStyle={tooltipStyle}
-              formatter={(value: number, key: string) => [`${value.toFixed(1)} kWh`, HU_LABELS[key] ?? key]}
+              formatter={(value: number, key: string) => [`${value.toFixed(1)} kWh`, LABELS[key] ?? key]}
               labelFormatter={(label: string) => {
                 const p = byMonth.get(label);
-                return p ? `${label} — összesen ${p.totalConsumptionKWh.toFixed(1)} kWh` : label;
+                return p
+                  ? tr('charts.monthlyConsumption.tooltipLabel', { label, total: p.totalConsumptionKWh.toFixed(1) })
+                  : label;
               }}
             />
             <Legend
-              formatter={(value: string) => HU_LABELS[value] ?? value}
+              formatter={(value: string) => LABELS[value] ?? value}
               wrapperStyle={{ color: t.textSecondary, fontSize: 12 }}
             />
             <Bar
