@@ -303,6 +303,15 @@ function buildIntervalSeries(
   };
 }
 
+/** Merges a point into a sweep array by capacity, replacing any existing point at the
+ *  same capacity - used so buildReason's "next capacity" comparison still makes sense
+ *  when the selected capacity is an arbitrary value the user picked, not one already
+ *  in the sweep grid. */
+function pointsWithSelection(sweep: SweepPoint[], selected: SweepPoint): SweepPoint[] {
+  const withoutDup = sweep.filter((p) => p.capacityKWh !== selected.capacityKWh);
+  return [...withoutDup, selected].sort((a, b) => a.capacityKWh - b.capacityKWh);
+}
+
 export function runSimulation(
   lang: Lang,
   timestamps: number[],
@@ -312,6 +321,7 @@ export function runSimulation(
   params: SimulationParams,
   gridExportKWh?: number[] | null,
   gridExportCoverage?: { start: number; end: number } | null,
+  forcedCapacityKWh?: number,
 ): SimulationResponse {
   const intervalHours = intervalMinutes / 60;
   const slotsPerDay = Math.round((24 * 60) / intervalMinutes);
@@ -346,10 +356,29 @@ export function runSimulation(
 
   const nonZeroSweep = sweep.filter((p) => p.capacityKWh > 0);
   const knee = findKneePoint(nonZeroSweep.length > 0 ? nonZeroSweep : sweep);
-  const reason = buildReason(lang, knee, sweep);
 
-  const recommendedSim = simulateBattery(consumptionKWh, productionKWh, {
-    capacityKWh: knee.capacityKWh,
+  // The detailed trace/charts/reason are for whichever capacity is currently selected -
+  // the server's own recommendation by default, or a capacity the user picked instead.
+  const selectedPoint =
+    forcedCapacityKWh === undefined || forcedCapacityKWh === knee.capacityKWh
+      ? knee
+      : toSweepPoint(
+          forcedCapacityKWh,
+          simulateBattery(consumptionKWh, productionKWh, {
+            capacityKWh: forcedCapacityKWh,
+            roundTripEfficiencyPct: params.roundTripEfficiencyPct,
+            maxPowerCRate: params.maxPowerCRate,
+            minSocReservePct: params.minSocReservePct,
+            intervalHours,
+          }),
+          baselineExportKWh,
+          totalProductionKWh,
+          days,
+        );
+  const reason = buildReason(lang, selectedPoint, pointsWithSelection(sweep, selectedPoint));
+
+  const selectedSim = simulateBattery(consumptionKWh, productionKWh, {
+    capacityKWh: selectedPoint.capacityKWh,
     roundTripEfficiencyPct: params.roundTripEfficiencyPct,
     maxPowerCRate: params.maxPowerCRate,
     minSocReservePct: params.minSocReservePct,
@@ -360,7 +389,7 @@ export function runSimulation(
     timestamps,
     consumptionKWh,
     productionKWh,
-    recommendedSim.trace!,
+    selectedSim.trace!,
     intervalMinutes,
   );
 
@@ -369,7 +398,7 @@ export function runSimulation(
     timestamps,
     consumptionKWh,
     productionKWh,
-    recommendedSim.trace!.socKWh,
+    selectedSim.trace!.socKWh,
   );
 
   const monthlyConsumptionProfile =
@@ -384,7 +413,7 @@ export function runSimulation(
         )
       : null;
 
-  const intervalSeries = buildIntervalSeries(timestamps, consumptionKWh, productionKWh, recommendedSim.trace!);
+  const intervalSeries = buildIntervalSeries(timestamps, consumptionKWh, productionKWh, selectedSim.trace!);
 
   const meta: SimulationMeta = {
     days,
@@ -398,7 +427,8 @@ export function runSimulation(
 
   return {
     sweep,
-    recommended: { ...knee, reason },
+    recommendedCapacityKWh: knee.capacityKWh,
+    selected: { ...selectedPoint, reason },
     dailyProfile,
     monthlyNightProfile,
     monthlyConsumptionProfile,

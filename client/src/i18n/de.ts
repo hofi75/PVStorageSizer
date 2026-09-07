@@ -9,11 +9,13 @@ export const de: Record<keyof typeof en, string> = {
     'die Batteriekapazität, die die ins Netz eingespeiste Energie minimiert und dabei eine gute ' +
     'Batterieauslastung beibehält.',
 
-  'upload.consumption.title': '1. Verbrauchsdaten',
-  'upload.consumption.description':
-    'CSV-Export deines Stromzählers in 15-Minuten-Auflösung. Enthält die Datei auch die ins Netz ' +
-    'eingespeiste Energie (unterschieden durch eine "Typ"-Spalte), leitet die App die Einspeisereihe ' +
-    'automatisch aus dem im Filter nicht gewählten anderen Wert ab - dafür ist keine separate Datei nötig.',
+  'upload.grid.title': '1. Netzdaten',
+  'upload.grid.description':
+    'CSV-Export deines Stromzählers in 15-Minuten-Auflösung. Das kann nur Netzbezug sein, oder eine ' +
+    'einzelne Datei mit sowohl Netzbezugs- als auch Netzeinspeisungswerten, unterschieden durch eine ' +
+    '"Typ"-Spalte (z. B. "Vételezett"/"Visszatáplált") - die App erkennt automatisch beide und leitet ' +
+    'daraus auch die Einspeisereihe ab, andere Zeilentypen werden ignoriert; dafür ist keine separate ' +
+    'Datei nötig.',
   'upload.production.title': '2. Solarertragsdaten',
   'upload.production.description':
     'CSV-Export der Ertragsdaten deines Wechselrichters/Monitoring-Systems, für denselben Standort.',
@@ -48,10 +50,13 @@ export const de: Record<keyof typeof en, string> = {
   'columnMapper.unitKW': 'kW (Durchschnittsleistung)',
   'columnMapper.unitW': 'W (Durchschnittsleistung)',
   'columnMapper.filterToggle':
-    'Nur bestimmte Zeilen verwenden (z. B. wenn die Datei sowohl Verbrauchs- als auch Erzeugungsdaten mit ' +
-    'einer "Typ"-Spalte enthält)',
+    'Nur bestimmte Zeilen verwenden (z. B. wenn die Datei sowohl Netzbezugs- als auch ' +
+    'Netzeinspeisungsdaten mit einer "Typ"-Spalte enthält)',
   'columnMapper.filterColLabel': 'Filterspalte',
   'columnMapper.filterValueLabel': 'Erforderlicher Wert',
+  'columnMapper.filterValueLabelGridUsage': 'Wert für Netzbezug',
+  'columnMapper.gridBackfeedValueLabel': 'Wert für Netzeinspeisung (optional)',
+  'columnMapper.gridBackfeedNoneOption': '— in dieser Datei nicht vorhanden —',
   'columnMapper.missingToggle':
     'Es gibt eine "Status"-Spalte, die fehlende/ungültige Daten markiert (z. B. "Keine") - für diese ' +
     'Zeilen wird der Wert derselben Tageszeit vom Vortag verwendet',
@@ -59,6 +64,10 @@ export const de: Record<keyof typeof en, string> = {
   'columnMapper.missingValueLabel': 'Wert, der fehlende Daten markiert',
 
   'results.heroLabel': 'empfohlene Batteriekapazität',
+  'results.selectedHeroLabel': 'ausgewählte Batteriekapazität',
+  'results.capacitySelectLabel': 'Batteriekapazität',
+  'results.resetToRecommended': 'Auf Empfehlung zurücksetzen',
+  'results.recalculating': 'Wird neu berechnet…',
   'results.exportReduction': 'Reduzierung der Einspeisung',
   'results.selfConsumption': 'Eigenverbrauch der Tageserzeugung',
   'results.dailyCycles': 'Durchschnittliche tägliche Zyklenzahl',
@@ -108,4 +117,9 @@ export const de: Record<keyof typeof en, string> = {
   'charts.daySelector.seriesBatteryDischarge': 'Aktueller Verbrauch aus Batterie',
   'charts.daySelector.seriesTotalConsumption': 'Gesamtverbrauch',
   'charts.daySelector.seriesSoc': 'Batterieladezustand',
+  'charts.daySelector.summaryConsumption': 'Gesamtverbrauch',
+  'charts.daySelector.summaryProduction': 'Gesamterzeugung',
+  'charts.daySelector.summaryGridImport': 'Gesamter Netzbezug',
+  'charts.daySelector.summaryGridExport': 'Gesamte Netzeinspeisung',
+  'charts.daySelector.summaryBatteryUsage': 'Gesamte Batterienutzung',
 };

@@ -9,12 +9,13 @@ export const hu: Record<keyof typeof en, string> = {
     'azt az akkumulátor kapacitást, amelynél a hálózatba visszatöltött energia a legkisebb, az akkumulátor ' +
     'kihasználtsága pedig még jó.',
 
-  'upload.consumption.title': '1. Fogyasztási adatok',
-  'upload.consumption.description':
-    'Elektromos mérőóra negyedórás bontású CSV exportja. Ha a fájl a vételezett és a hálózatba ' +
-    'visszatáplált energiát is tartalmazza (egy "típus" oszloppal megkülönböztetve), a rendszer a ' +
-    'szűrőben nem választott másik értékből automatikusan levezeti a visszatáplálást is - külön ' +
-    'fájlt nem kell feltölteni hozzá.',
+  'upload.grid.title': '1. Hálózati adatok',
+  'upload.grid.description':
+    'Elektromos mérőóra negyedórás bontású CSV exportja. Lehet csak vételezési adat, vagy egyetlen fájl, ' +
+    'ami a vételezett és a hálózatba visszatáplált energiát is tartalmazza egy "típus" oszloppal ' +
+    'megkülönböztetve (pl. "Vételezett"/"Visszatáplált") - a rendszer automatikusan felismeri mindkettőt, ' +
+    'és abból vezeti le a visszatáplálási adatsort is, minden más sortípust figyelmen kívül hagyva - ' +
+    'külön fájlt nem kell feltölteni hozzá.',
   'upload.production.title': '2. Napelemes termelési adatok',
   'upload.production.description': 'Az inverter/monitoring rendszer termelési CSV exportja, ugyanarra a fogyasztási helyre.',
   'upload.dropzoneHint': 'Húzd ide a CSV fájlt, vagy kattints a tallózáshoz',
@@ -48,10 +49,13 @@ export const hu: Record<keyof typeof en, string> = {
   'columnMapper.unitKW': 'kW (átlagteljesítmény)',
   'columnMapper.unitW': 'W (átlagteljesítmény)',
   'columnMapper.filterToggle':
-    'Csak bizonyos sorok felhasználása (pl. ha a fájl fogyasztási és termelési adatokat is tartalmaz egy ' +
-    '"típus" oszloppal)',
+    'Csak bizonyos sorok felhasználása (pl. ha a fájl vételezési és visszatáplálási adatokat is tartalmaz ' +
+    'egy "típus" oszloppal)',
   'columnMapper.filterColLabel': 'Szűrés oszlopa',
   'columnMapper.filterValueLabel': 'Elvárt érték',
+  'columnMapper.filterValueLabelGridUsage': 'Vételezést jelentő érték',
+  'columnMapper.gridBackfeedValueLabel': 'Visszatáplálást jelentő érték (opcionális)',
+  'columnMapper.gridBackfeedNoneOption': '— nincs ilyen ebben a fájlban —',
   'columnMapper.missingToggle':
     'Van egy "státusz" oszlop, ami jelzi a hiányzó/érvénytelen adatot (pl. "Nincs") - ezeknél egy korábbi ' +
     'nap azonos időpontbeli értékét használjuk',
@@ -59,6 +63,10 @@ export const hu: Record<keyof typeof en, string> = {
   'columnMapper.missingValueLabel': 'Hiányzó adatot jelző érték',
 
   'results.heroLabel': 'javasolt akkumulátor kapacitás',
+  'results.selectedHeroLabel': 'kiválasztott akkumulátor kapacitás',
+  'results.capacitySelectLabel': 'Akkumulátor kapacitás',
+  'results.resetToRecommended': 'Vissza a javasoltra',
+  'results.recalculating': 'Újraszámítás…',
   'results.exportReduction': 'Export csökkenés',
   'results.selfConsumption': 'Napi termelés önfogyasztása',
   'results.dailyCycles': 'Átlagos napi ciklusszám',
@@ -107,4 +115,9 @@ export const hu: Record<keyof typeof en, string> = {
   'charts.daySelector.seriesBatteryDischarge': 'Aktuális fogyasztás akkumulátorról',
   'charts.daySelector.seriesTotalConsumption': 'Összes fogyasztás',
   'charts.daySelector.seriesSoc': 'Akkumulátor töltöttség',
+  'charts.daySelector.summaryConsumption': 'Napi összes fogyasztás',
+  'charts.daySelector.summaryProduction': 'Napi összes termelés',
+  'charts.daySelector.summaryGridImport': 'Napi összes hálózati vételezés',
+  'charts.daySelector.summaryGridExport': 'Napi összes visszatáplálás',
+  'charts.daySelector.summaryBatteryUsage': 'Napi összes akkumulátor-használat',
 };

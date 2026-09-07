@@ -8,11 +8,12 @@ export const en = {
     'Upload your quarter-hourly consumption and solar production data as CSV, and the app finds the ' +
     'battery capacity that minimizes energy exported to the grid while keeping battery utilization reasonable.',
 
-  'upload.consumption.title': '1. Consumption data',
-  'upload.consumption.description':
-    'CSV export from your electricity meter, in 15-minute resolution. If the file also contains energy ' +
-    'exported to the grid (distinguished by a "type" column), the app automatically derives the export ' +
-    'series from the other value not selected in the filter - no separate file needed for that.',
+  'upload.grid.title': '1. Grid data',
+  'upload.grid.description':
+    'CSV export from your electricity meter, in 15-minute resolution. This can be grid usage only, or a ' +
+    'single file with both grid usage and grid backfeed readings distinguished by a "type" column (e.g. ' +
+    '"Vételezett"/"Visszatáplált") - the app automatically detects both and derives the backfeed series ' +
+    'from it, ignoring any other row types; no separate file needed for that.',
   'upload.production.title': '2. Solar production data',
   'upload.production.description':
     "CSV export from your inverter/monitoring system's production data, for the same site.",
@@ -47,10 +48,13 @@ export const en = {
   'columnMapper.unitKW': 'kW (average power)',
   'columnMapper.unitW': 'W (average power)',
   'columnMapper.filterToggle':
-    'Only use certain rows (e.g. if the file contains both consumption and production data with a ' +
+    'Only use certain rows (e.g. if the file contains both grid usage and grid backfeed data with a ' +
     '"type" column)',
   'columnMapper.filterColLabel': 'Filter column',
   'columnMapper.filterValueLabel': 'Required value',
+  'columnMapper.filterValueLabelGridUsage': 'Value meaning grid usage',
+  'columnMapper.gridBackfeedValueLabel': 'Value meaning grid backfeed (optional)',
+  'columnMapper.gridBackfeedNoneOption': '— not present in this file —',
   'columnMapper.missingToggle':
     'There\'s a "status" column marking missing/invalid data (e.g. "None") - for those rows, use the ' +
     'same time-of-day value from a previous day',
@@ -58,6 +62,10 @@ export const en = {
   'columnMapper.missingValueLabel': 'Value marking missing data',
 
   'results.heroLabel': 'recommended battery capacity',
+  'results.selectedHeroLabel': 'selected battery capacity',
+  'results.capacitySelectLabel': 'Battery capacity',
+  'results.resetToRecommended': 'Reset to recommended',
+  'results.recalculating': 'Recalculating…',
   'results.exportReduction': 'Export reduction',
   'results.selfConsumption': 'Self-consumption of daily production',
   'results.dailyCycles': 'Average daily cycle count',
@@ -106,4 +114,9 @@ export const en = {
   'charts.daySelector.seriesBatteryDischarge': 'Current consumption from battery',
   'charts.daySelector.seriesTotalConsumption': 'Total consumption',
   'charts.daySelector.seriesSoc': 'Battery state of charge',
+  'charts.daySelector.summaryConsumption': 'Total consumption',
+  'charts.daySelector.summaryProduction': 'Total production',
+  'charts.daySelector.summaryGridImport': 'Total grid import',
+  'charts.daySelector.summaryGridExport': 'Total grid export',
+  'charts.daySelector.summaryBatteryUsage': 'Total battery usage',
 } as const;

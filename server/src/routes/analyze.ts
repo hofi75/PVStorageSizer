@@ -44,6 +44,14 @@ interface SimulateRequestBody {
   gridExport?: FileMappingInput;
   params: SimulationParams;
   lang?: string;
+  /** Recomputes the detailed stats/charts for this specific capacity instead of the
+   *  server's own recommendation - used to let the user pick a different battery size
+   *  after the initial run without re-uploading anything. */
+  forcedCapacityKWh?: number;
+}
+
+function resolveForcedCapacityKWh(raw: unknown): number | undefined {
+  return typeof raw === 'number' && Number.isFinite(raw) && raw >= 0 ? raw : undefined;
 }
 
 function isFileMappingInput(v: unknown): v is FileMappingInput {
@@ -96,6 +104,7 @@ analyzeRouter.post('/simulate', (req, res) => {
       body.params,
       aligned.gridExportKWh,
       aligned.gridExportCoverage,
+      resolveForcedCapacityKWh(body.forcedCapacityKWh),
     );
 
     const warnings = [

@@ -7,6 +7,9 @@ interface Props {
   idPrefix: string;
   title: string;
   description: string;
+  /** Shows a second filter value picker for grid-backfeed rows (only meaningful for a
+   *  grid-meter file that may mix usage and backfeed readings via a "type" column). */
+  showGridBackfeedFilter?: boolean;
   fileName: string | null;
   parsed: ParsedCsv | null;
   mapping: ColumnMapping | null;
@@ -20,6 +23,7 @@ export function FileUploadCard({
   idPrefix,
   title,
   description,
+  showGridBackfeedFilter,
   fileName,
   parsed,
   mapping,
@@ -73,7 +77,13 @@ export function FileUploadCard({
       {error && <p className="status error">{error}</p>}
 
       {parsed && mapping && (
-        <ColumnMapper idPrefix={idPrefix} parsed={parsed} mapping={mapping} onChange={onMappingChange} />
+        <ColumnMapper
+          idPrefix={idPrefix}
+          parsed={parsed}
+          mapping={mapping}
+          onChange={onMappingChange}
+          showGridBackfeedFilter={showGridBackfeedFilter}
+        />
       )}
     </div>
   );

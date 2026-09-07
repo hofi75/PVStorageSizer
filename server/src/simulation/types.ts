@@ -12,10 +12,16 @@ export interface ColumnMapping {
   dateFormat: string;
   timestampAlignment: TimestampAlignment;
   valueUnit: ValueUnit;
-  /** Optional row filter, e.g. for files that mix consumption and production rows
+  /** Optional row filter, e.g. for files that mix grid-usage and grid-backfeed rows
    *  distinguished by a "type" column (filterCol === null means no filtering). */
   filterCol: number | null;
   filterValue: string;
+  /** When filterCol is set on a grid-data file, the value (in the same column) that
+   *  marks grid-backfeed rows - lets the backfeed series be derived from this same
+   *  file/column instead of requiring a separate upload (null means not applicable/
+   *  not detected, so no backfeed series is derived). Not used by the server itself -
+   *  only read client-side to build the separate gridExport request payload. */
+  gridBackfeedValue: string | null;
   /** Optional "status" column marking rows with no real reading (e.g. "Nincs"); such
    *  rows have their value replaced by the same time-of-day value from a prior day
    *  instead of being trusted as-is (missingStatusCol === null means no such marking). */
@@ -95,7 +101,13 @@ export interface SimulationMeta {
 
 export interface SimulationResponse {
   sweep: SweepPoint[];
-  recommended: SweepPoint & { reason: string };
+  /** The server's own capacity recommendation (the sweep curve's knee point), regardless
+   *  of which capacity is currently selected below - lets the UI show/reset to it. */
+  recommendedCapacityKWh: number;
+  /** Detailed stats/reason for the capacity currently being shown - the recommendation
+   *  by default, or a capacity the user chose to inspect instead (see forcedCapacityKWh
+   *  on the request). */
+  selected: SweepPoint & { reason: string };
   dailyProfile: DailyProfilePoint[];
   monthlyNightProfile: MonthlyNightPoint[];
   monthlyConsumptionProfile: MonthlyConsumptionPoint[] | null;

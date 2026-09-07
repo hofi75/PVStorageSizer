@@ -7,6 +7,9 @@ interface Props {
   parsed: ParsedCsv;
   mapping: ColumnMapping;
   onChange: (mapping: ColumnMapping) => void;
+  /** Shows a second filter value picker for grid-backfeed rows (only meaningful for a
+   *  grid-meter file that may mix usage and backfeed readings via a "type" column). */
+  showGridBackfeedFilter?: boolean;
 }
 
 function columnLabel(
@@ -29,7 +32,7 @@ export function distinctValues(parsed: ParsedCsv, mapping: ColumnMapping, col: n
   return Array.from(seen).sort();
 }
 
-export function ColumnMapper({ idPrefix, parsed, mapping, onChange }: Props) {
+export function ColumnMapper({ idPrefix, parsed, mapping, onChange, showGridBackfeedFilter }: Props) {
   const { t } = useTranslation();
   const columnCount = parsed.columnCount;
   const previewRows = (mapping.hasHeader ? parsed.rows.slice(1) : parsed.rows).slice(0, 6);
@@ -207,9 +210,9 @@ export function ColumnMapper({ idPrefix, parsed, mapping, onChange }: Props) {
             if (e.target.checked) {
               const col = columns.find((i) => i !== mapping.valueCol) ?? 0;
               const values = distinctValues(parsed, mapping, col);
-              onChange({ ...mapping, filterCol: col, filterValue: values[0] ?? '' });
+              onChange({ ...mapping, filterCol: col, filterValue: values[0] ?? '', gridBackfeedValue: null });
             } else {
-              onChange({ ...mapping, filterCol: null, filterValue: '' });
+              onChange({ ...mapping, filterCol: null, filterValue: '', gridBackfeedValue: null });
             }
           }}
         />
@@ -227,8 +230,7 @@ export function ColumnMapper({ idPrefix, parsed, mapping, onChange }: Props) {
             onChange={(e) => {
               const col = Number(e.target.value);
               const values = distinctValues(parsed, mapping, col);
-              set('filterCol', col);
-              onChange({ ...mapping, filterCol: col, filterValue: values[0] ?? '' });
+              onChange({ ...mapping, filterCol: col, filterValue: values[0] ?? '', gridBackfeedValue: null });
             }}
           >
             {columns.map((i) => (
@@ -238,18 +240,45 @@ export function ColumnMapper({ idPrefix, parsed, mapping, onChange }: Props) {
             ))}
           </select>
           <label className="field-label" htmlFor={id('filterValue')}>
-            {t('columnMapper.filterValueLabel')}
+            {t(showGridBackfeedFilter ? 'columnMapper.filterValueLabelGridUsage' : 'columnMapper.filterValueLabel')}
           </label>
           <select
             id={id('filterValue')}
             value={mapping.filterValue}
-            onChange={(e) => set('filterValue', e.target.value)}
+            onChange={(e) => {
+              const filterValue = e.target.value;
+              // Prevent picking the same value for both grid usage and grid backfeed.
+              const backfeedClash = mapping.gridBackfeedValue === filterValue;
+              onChange({ ...mapping, filterValue, gridBackfeedValue: backfeedClash ? null : mapping.gridBackfeedValue });
+            }}
           >
             {distinctValues(parsed, mapping, mapping.filterCol).map((v) => (
               <option key={v} value={v}>
                 {v}
               </option>
             ))}
+          </select>
+        </div>
+      )}
+
+      {mapping.filterCol !== null && showGridBackfeedFilter && (
+        <div className="field-row">
+          <label className="field-label" htmlFor={id('gridBackfeedValue')}>
+            {t('columnMapper.gridBackfeedValueLabel')}
+          </label>
+          <select
+            id={id('gridBackfeedValue')}
+            value={mapping.gridBackfeedValue ?? ''}
+            onChange={(e) => set('gridBackfeedValue', e.target.value || null)}
+          >
+            <option value="">{t('columnMapper.gridBackfeedNoneOption')}</option>
+            {distinctValues(parsed, mapping, mapping.filterCol)
+              .filter((v) => v !== mapping.filterValue)
+              .map((v) => (
+                <option key={v} value={v}>
+                  {v}
+                </option>
+              ))}
           </select>
         </div>
       )}

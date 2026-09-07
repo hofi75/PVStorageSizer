@@ -10,7 +10,6 @@ import { MonthlyNightChart } from './components/MonthlyNightChart';
 import { MonthlyConsumptionChart } from './components/MonthlyConsumptionChart';
 import { DaySelectorChart } from './components/DaySelectorChart';
 import { LanguageSwitcher } from './components/LanguageSwitcher';
-import { distinctValues } from './components/ColumnMapper';
 import { useTranslation } from './i18n/context';
 import { defaultParams } from './types';
 import type { ColumnMapping, ParsedCsv, SimulationParams, SimulationResponse } from './types';
@@ -26,20 +25,17 @@ interface FileSlotState {
 const emptySlot: FileSlotState = { fileName: null, parsed: null, mapping: null, loading: false, error: null };
 
 /**
- * A single meter export file often contains both consumption ("Vételezett") and
- * grid-export ("Visszatáplált") rows, distinguished only by a "type" column that the
- * consumption upload already filters on. When that's the case (exactly two distinct
- * values in the filter column), the grid-export series can be derived for free from
- * the same file/mapping - no separate upload needed.
+ * A single meter export file often contains both grid-usage ("Vételezett") and
+ * grid-backfeed ("Visszatáplált") rows, distinguished only by a "type" column - the
+ * grid-data upload filters to the usage value via filterCol/filterValue, and separately
+ * names the backfeed value via gridBackfeedValue (auto-detected, editable in the column
+ * mapper). When set, the backfeed series is derived for free from this same file/column
+ * instead of requiring a separate upload.
  */
 function deriveGridExportMapping(consumption: FileSlotState): { rows: string[][]; mapping: ColumnMapping } | null {
   const { parsed, mapping } = consumption;
-  if (!parsed || !mapping || mapping.filterCol === null) return null;
-  const values = distinctValues(parsed, mapping, mapping.filterCol);
-  if (values.length !== 2) return null;
-  const other = values.find((v) => v !== mapping.filterValue);
-  if (!other) return null;
-  return { rows: parsed.rows, mapping: { ...mapping, filterValue: other } };
+  if (!parsed || !mapping || mapping.filterCol === null || !mapping.gridBackfeedValue) return null;
+  return { rows: parsed.rows, mapping: { ...mapping, filterValue: mapping.gridBackfeedValue } };
 }
 
 function App() {
@@ -49,6 +45,7 @@ function App() {
   const [params, setParams] = useState<SimulationParams>(defaultParams());
   const [result, setResult] = useState<SimulationResponse | null>(null);
   const [simLoading, setSimLoading] = useState(false);
+  const [capacityChanging, setCapacityChanging] = useState(false);
   const [simError, setSimError] = useState<string | null>(null);
 
   const handleFileSelected = async (setSlot: (s: FileSlotState) => void, file: File) => {
@@ -69,9 +66,10 @@ function App() {
 
   const canSimulate = Boolean(consumption.parsed && consumption.mapping && production.parsed && production.mapping);
 
-  const handleSimulate = async () => {
-    if (!consumption.parsed || !consumption.mapping || !production.parsed || !production.mapping) return;
-    setSimLoading(true);
+  /** Runs (or reruns) the simulation. Returns whether it succeeded, so callers can
+   *  decide what to do with any previously-shown result on failure. */
+  const runSimulate = async (forcedCapacityKWh?: number): Promise<boolean> => {
+    if (!consumption.parsed || !consumption.mapping || !production.parsed || !production.mapping) return false;
     setSimError(null);
     try {
       const res = await simulate(
@@ -80,14 +78,30 @@ function App() {
         params,
         deriveGridExportMapping(consumption),
         lang,
+        forcedCapacityKWh,
       );
       setResult(res);
+      return true;
     } catch (err) {
       setSimError((err as Error).message);
-      setResult(null);
-    } finally {
-      setSimLoading(false);
+      return false;
     }
+  };
+
+  const handleSimulate = async () => {
+    setSimLoading(true);
+    const ok = await runSimulate();
+    if (!ok) setResult(null);
+    setSimLoading(false);
+  };
+
+  /** Reruns just the detailed stats/charts for a battery size the user picked from the
+   *  dropdown - reuses the already-uploaded files, no new upload needed. Keeps showing
+   *  the previous result if the recompute fails, rather than clearing the whole panel. */
+  const handleCapacityChange = async (capacityKWh: number) => {
+    setCapacityChanging(true);
+    await runSimulate(capacityKWh);
+    setCapacityChanging(false);
   };
 
   return (
@@ -103,8 +117,9 @@ function App() {
       <div className="upload-grid">
         <FileUploadCard
           idPrefix="consumption"
-          title={t('upload.consumption.title')}
-          description={t('upload.consumption.description')}
+          title={t('upload.grid.title')}
+          description={t('upload.grid.description')}
+          showGridBackfeedFilter
           fileName={consumption.fileName}
           parsed={consumption.parsed}
           mapping={consumption.mapping}
@@ -146,8 +161,13 @@ function App() {
               {w}
             </div>
           ))}
-          <ResultsSummary result={result} />
-          <CapacityChart sweep={result.sweep} recommendedCapacityKWh={result.recommended.capacityKWh} />
+          <ResultsSummary
+            result={result}
+            sweepMaxKWh={params.sweepMaxKWh}
+            onCapacityChange={handleCapacityChange}
+            capacityChanging={capacityChanging}
+          />
+          <CapacityChart sweep={result.sweep} recommendedCapacityKWh={result.recommendedCapacityKWh} />
           <DailyProfileChart dailyProfile={result.dailyProfile} />
           <DaySelectorChart intervalSeries={result.intervalSeries} />
           <MonthlyNightChart monthlyNightProfile={result.monthlyNightProfile} />

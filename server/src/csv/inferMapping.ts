@@ -20,6 +20,8 @@ const START_HEADER_HINTS = ['kezdet', 'start'];
  *  types per timestamp (e.g. a meter export with both "Vételezett" and "Visszatáplált"
  *  rows) - used to default the row filter so those types don't collide during dedup. */
 const CONSUMPTION_TYPE_HINTS = ['vétel', 'vetel', 'fogyas', 'import', 'consumption', 'terhelés', 'terheles', 'load'];
+/** Marks a row as a grid-backfeed/export reading, in the same kind of file as above. */
+const GRID_BACKFEED_HINTS = ['visszatáp', 'visszatap', 'betáp', 'betap', 'export', 'einspeis', 'feed'];
 const MAX_TYPE_COLUMN_DISTINCT_VALUES = 8;
 
 function includesAny(text: string, hints: string[]): boolean {
@@ -90,11 +92,12 @@ function detectTypeFilterColumn(
   dataRows: string[][],
   columnCount: number,
   excludeCols: Set<number>,
-): { col: number; value: string } | null {
+): { col: number; value: string; backfeedValue: string | null } | null {
   for (let col = 0; col < columnCount; col++) {
     if (excludeCols.has(col)) continue;
     const distinct = new Set<string>();
     let consumptionMatch: string | null = null;
+    let backfeedMatch: string | null = null;
     let tooManyDistinctValues = false;
     for (const row of dataRows) {
       const v = row[col]?.trim();
@@ -104,10 +107,12 @@ function detectTypeFilterColumn(
         tooManyDistinctValues = true;
         break;
       }
-      if (!consumptionMatch && includesAny(v.toLowerCase(), CONSUMPTION_TYPE_HINTS)) consumptionMatch = v;
+      const lower = v.toLowerCase();
+      if (!consumptionMatch && includesAny(lower, CONSUMPTION_TYPE_HINTS)) consumptionMatch = v;
+      if (!backfeedMatch && includesAny(lower, GRID_BACKFEED_HINTS)) backfeedMatch = v;
     }
     if (!tooManyDistinctValues && distinct.size >= 2 && consumptionMatch) {
-      return { col, value: consumptionMatch };
+      return { col, value: consumptionMatch, backfeedValue: backfeedMatch };
     }
   }
   return null;
@@ -216,6 +221,7 @@ export function inferMapping(rows: string[][], suggestedHeader: boolean, columnC
     valueUnit,
     filterCol: typeFilter?.col ?? null,
     filterValue: typeFilter?.value ?? '',
+    gridBackfeedValue: typeFilter?.backfeedValue ?? null,
     missingStatusCol: null,
     missingStatusValue: '',
   };

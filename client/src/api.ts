@@ -31,11 +31,19 @@ export async function simulate(
   params: SimulationParams,
   gridExport: FileMappingInput | null | undefined,
   lang: Lang,
+  forcedCapacityKWh?: number,
 ): Promise<SimulationResponse> {
   const res = await fetch('/api/simulate', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ consumption, production, gridExport: gridExport ?? undefined, params, lang }),
+    body: JSON.stringify({
+      consumption,
+      production,
+      gridExport: gridExport ?? undefined,
+      params,
+      lang,
+      forcedCapacityKWh,
+    }),
   });
   if (!res.ok) throw new Error(await readError(res, lang));
   return res.json();

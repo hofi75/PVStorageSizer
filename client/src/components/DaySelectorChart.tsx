@@ -12,6 +12,7 @@ import {
 } from 'recharts';
 import { useColorScheme, TOKENS } from '../palette';
 import { useTranslation } from '../i18n/context';
+import { StatTile } from './StatTile';
 import type { IntervalSeriesData } from '../types';
 
 interface Props {
@@ -50,7 +51,7 @@ export function DaySelectorChart({ intervalSeries }: Props) {
 
   const [selectedDay, setSelectedDay] = useState(() => dayKeys[Math.floor(dayKeys.length / 2)] ?? '');
 
-  const chartData = useMemo(() => {
+  const { chartData, dayTotals } = useMemo(() => {
     const {
       timestamps,
       socKWh,
@@ -73,6 +74,14 @@ export function DaySelectorChart({ intervalSeries }: Props) {
       totalProductionKWh: 0,
     }));
 
+    const dayTotals = {
+      consumptionKWh: 0,
+      productionKWh: 0,
+      gridImportKWh: 0,
+      gridExportKWh: 0,
+      batteryDischargeKWh: 0,
+    };
+
     for (let i = 0; i < timestamps.length; i++) {
       if (dayKeyOf(timestamps[i]) !== selectedDay) continue;
       const h = hours[new Date(timestamps[i]).getHours()];
@@ -83,9 +92,15 @@ export function DaySelectorChart({ intervalSeries }: Props) {
       h.batteryDischargeKWh += batteryDischargeKWh[i];
       h.totalConsumptionKWh += totalConsumptionKWh[i];
       h.totalProductionKWh += totalProductionKWh[i];
+
+      dayTotals.consumptionKWh += totalConsumptionKWh[i];
+      dayTotals.productionKWh += totalProductionKWh[i];
+      dayTotals.gridImportKWh += gridImportKWh[i];
+      dayTotals.gridExportKWh += gridExportKWh[i];
+      dayTotals.batteryDischargeKWh += batteryDischargeKWh[i];
     }
 
-    return hours
+    const chartData = hours
       .filter((h) => h.socCount > 0)
       .map((h) => ({
         label: `${String(h.hour).padStart(2, '0')}:00`,
@@ -96,6 +111,8 @@ export function DaySelectorChart({ intervalSeries }: Props) {
         totalConsumptionKWh: -h.totalConsumptionKWh,
         totalProductionKWh: h.totalProductionKWh,
       }));
+
+    return { chartData, dayTotals };
   }, [intervalSeries, selectedDay]);
 
   if (dayKeys.length === 0) return null;
@@ -122,6 +139,15 @@ export function DaySelectorChart({ intervalSeries }: Props) {
           ))}
         </select>
       </div>
+
+      <div className="stat-grid day-summary">
+        <StatTile label={tr('charts.daySelector.summaryConsumption')} value={`${dayTotals.consumptionKWh.toFixed(1)} kWh`} />
+        <StatTile label={tr('charts.daySelector.summaryProduction')} value={`${dayTotals.productionKWh.toFixed(1)} kWh`} />
+        <StatTile label={tr('charts.daySelector.summaryGridImport')} value={`${dayTotals.gridImportKWh.toFixed(1)} kWh`} />
+        <StatTile label={tr('charts.daySelector.summaryGridExport')} value={`${dayTotals.gridExportKWh.toFixed(1)} kWh`} />
+        <StatTile label={tr('charts.daySelector.summaryBatteryUsage')} value={`${dayTotals.batteryDischargeKWh.toFixed(1)} kWh`} />
+      </div>
+
       <p className="muted" style={{ marginTop: 8, marginBottom: 8, fontSize: 13 }}>
         {tr('charts.daySelector.description')}
       </p>

@@ -215,6 +215,25 @@ input[type='number'] {
   cursor: not-allowed;
 }
 
+.capacity-selector {
+  margin-top: 4px;
+}
+
+.link-button {
+  background: none;
+  border: none;
+  padding: 0;
+  color: var(--accent);
+  font-size: 13px;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.link-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
 .results {
   display: flex;
   flex-direction: column;
@@ -280,6 +299,10 @@ input[type='number'] {
 
 .meta-line {
   font-size: 13px;
+}
+
+.day-summary {
+  margin: 12px 0;
 }
 
 .chart-grid {
